@@ -4,10 +4,228 @@ import sqlite3
 from flask import Flask, request, jsonify
 from flask_jwt import JWT, jwt_required, current_identity
 from flask_cors import CORS
+from flask_mail import Mail, Message
 
 
-class User(object)
-    def __init__(self, phone, email, password):
-        self.phone = phone
-        self.email = email
+# INITIATING OBJECT CALLED USER AND ADDING PARAMS
+class User(object):
+    def __init__(self, id_num, username, password):
+        self.id = id_num
+        self.username = username
         self.password = password
+
+
+# CREATING USER TABLE
+def create_user_table():
+    with sqlite3.connect('flask_db.db') as conn:
+        conn.execute('Create TABLE IF NOT EXISTS user(id INTEGER PRIMARY KEY AUTOINCREMENT,'
+                     'first_name TEXT NOT NULL,'
+                     'last_name TEXT NOT NULL,'
+                     'username TEXT VARCHAR NULL,'
+                     'email_address VARCHAR NOT NULL,'
+                     'address VARCHAR NOT NULL,'
+                     'password VARCHAR NOT NULL)')
+
+    print('Successfully Created User Table')
+
+
+# CREATING PRODUCT TABLE
+def create_product_table():
+    with sqlite3.connect('flask_db.db') as conn:
+        conn.execute('CREATE TABLE IF NOT EXISTS product(id INTEGER PRIMARY KEY AUTOINCREMENT,'
+                     'name TEXT NOT NULL,'
+                     'description VARCHAR NOT NULL,'
+                     'price VARCHAR NOT NULL,'
+                     'category TEXT NOT NULL)')
+
+        print('Successfully Created Product Table')
+
+
+def fetch_users():
+    with sqlite3.connect('flask_db.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM user")
+        users = cursor.fetchall()
+
+        new_data = []
+
+        for data in users:
+            # print(User(data[0], data[3], data[6]))
+            print(data)
+            new_data.append(User(data[0], data[3], data[6]))
+    return new_data
+
+
+def authenticate(username, password):
+    user = username_table.get(username, None)
+    if user and hmac.compare_digest(user.password.encode('utf-8'), password.encode('utf-8')):
+        return user
+
+
+def identity(payload):
+    user_id = payload['identity']
+    return userid_table.get(user_id, None)
+
+
+app = Flask(__name__)
+app.debug = True
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = 'lottoarj@gmail.com'
+app.config['MAIL_PASSWORD'] = 'lottoarj123!'
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+mail = Mail(app)
+app.config['SECRET_KEY'] = 'super-secret'
+CORS(app)
+
+create_user_table()
+create_product_table()
+users = fetch_users()
+
+username_table = {u.username: u for u in users}
+userid_table = {u.id: u for u in users}
+
+jwt = JWT(app, authenticate, identity)
+
+
+@app.route('/protected')
+@jwt_required()
+def protected():
+    return '%s' % current_identity
+
+
+@app.route('/user-registration/', methods=["POST"])
+def user_registration():
+    response = {}
+    if request.method == "POST":
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        username = request.form['username']
+        address = request.form['address']
+        password = request.form['password']
+        email_address = request.form['email_address']
+
+        with sqlite3.connect("flask_db.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"INSERT INTO user( first_name, last_name, username, address, password, email_address )"
+                           f"VALUES('{first_name}', '{last_name}', '{username}', '{address}', '{password}', '{email_address}')")
+            conn.commit()
+
+            response["message"] = "register success"
+            response["status_code"] = 201
+
+            if response["status_code"] == 201:
+                msg = Message('Success!', sender='lottoarj@gmail.com', recipients=[email_address])
+                msg.body = "Your Registration was Successful!"
+                mail.send(msg)
+                return "Message Sent"
+
+        return response
+
+
+@app.route('/add-product/', methods=["POST"])
+@jwt_required()
+def add_product():
+    response = {}
+
+    if request.method == "POST":
+        name = request.form['name']
+        description = request.form['description']
+        price = request.form['price']
+        category = request.form['category']
+
+        with sqlite3.connect("flask_db.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"INSERT INTO product( name, description, price, category )"
+                           f"VALUES('{name}', '{description}', '{price}', '{category}')")
+            conn.commit()
+
+            response["description"] = "add success"
+            response["status_code"] = 201
+
+        return response
+
+
+@app.route('/delete-product/<int:post_id>/', methods=["GET"])
+@jwt_required()
+def delete_product(post_id):
+    response = {}
+    with sqlite3.connect("flask_db.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"DELETE FROM product WHERE id={str(post_id)}")
+        conn.commit()
+
+        response["status_code"] = 200
+        response["message"] = "Product Deleted Successfully"
+
+    return response
+
+
+@app.route('/show-products/', methods=["GET"])
+def get_products():
+    response = {}
+
+    with sqlite3.connect("flask_db.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM product")
+
+        products = cursor.fetchall()
+
+    response["status_code"] = 200
+    response["data"] = products
+
+    return response
+
+
+@app.route('/view-product/<int:post_id>/', methods=["GET"])
+def get_post(post_id):
+    response = {}
+
+    with sqlite3.connect("flask_db.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM product WHERE id={str(post_id)}")
+
+        response["status_code"] = 200
+        response["description"] = "Product Retrieval Successful"
+        response["data"] = cursor.fetchone()
+
+    return jsonify(response)
+
+
+@app.route('/edit-post/<int:post_id>/', methods=["PUT"])
+@jwt_required()
+def edit_post(post_id):
+    response = {}
+
+    if request.method == "PUT":
+        with sqlite3.connect('flask_db.db') as connection:
+            incoming_data = dict(request.json)
+            put_data = {}
+
+            if incoming_data.get("name") is not None:
+                put_data["name"] = incoming_data.get("name")
+
+                with sqlite3.connect("flask_db.db") as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE product SET name =? WHERE id=?", (put_data["name"], post_id))
+                    conn.commit()
+                    response["message"] = "Name Updated Successfully"
+                    response["status_code"] = 200
+
+            if incoming_data.get("content") is not None:
+                put_data["content"] = incoming_data.get("content")
+
+                with sqlite3.connect("flask_db.db") as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE product SET name =? WHERE id=?", (put_data["content"], post_id))
+                    conn.commit()
+
+                    response["message"] = "Content Updated Successfully"
+                    response["status_code"] = 200
+
+    return response
+
+
+if __name__ == "__main__":
+    app.run()
