@@ -1,6 +1,6 @@
+# IMPORTING ALL THE NEEDED MODULES
 import hmac
 import sqlite3
-
 from flask import Flask, request, jsonify
 from flask_jwt import JWT, jwt_required, current_identity
 from flask_cors import CORS
@@ -41,6 +41,7 @@ def create_product_table():
         print('Successfully Created Product Table')
 
 
+# GETTING USER ID, USERNAME AND PASSWORD FROM USER TABLE
 def fetch_users():
     with sqlite3.connect('flask_db.db') as conn:
         cursor = conn.cursor()
@@ -56,6 +57,7 @@ def fetch_users():
     return new_data
 
 
+# AUTHENTICATION
 def authenticate(username, password):
     user = username_table.get(username, None)
     if user and hmac.compare_digest(user.password.encode('utf-8'), password.encode('utf-8')):
@@ -67,8 +69,10 @@ def identity(payload):
     return userid_table.get(user_id, None)
 
 
+# INITIALISING FLASK APP AND DEBUGGING
 app = Flask(__name__)
 app.debug = True
+# USING FLASK MAIL TO SEND EMAILS
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = 'lottoarj@gmail.com'
@@ -89,12 +93,14 @@ userid_table = {u.id: u for u in users}
 jwt = JWT(app, authenticate, identity)
 
 
+# TOKEN
 @app.route('/protected')
 @jwt_required()
 def protected():
     return '%s' % current_identity
 
 
+# CREATING APP ROUTE AND FUNCTION FOR USER REGISTRATION
 @app.route('/user-registration/', methods=["POST"])
 def user_registration():
     response = {}
@@ -124,6 +130,7 @@ def user_registration():
         return response
 
 
+# FUNCTION TO ADD PRODUCTS
 @app.route('/add-product/', methods=["POST"])
 @jwt_required()
 def add_product():
@@ -147,6 +154,7 @@ def add_product():
         return response
 
 
+# FUNCTION TO DELETE PRODUCTS
 @app.route('/delete-product/<int:post_id>/', methods=["GET"])
 @jwt_required()
 def delete_product(post_id):
@@ -162,6 +170,7 @@ def delete_product(post_id):
     return response
 
 
+# FUNCTION TO SHOW PRODUCTS
 @app.route('/show-products/', methods=["GET"])
 def get_products():
     response = {}
@@ -178,6 +187,7 @@ def get_products():
     return response
 
 
+# FUNCTION TO VIEW PRODUCTS
 @app.route('/view-product/<int:post_id>/', methods=["GET"])
 def get_post(post_id):
     response = {}
@@ -193,6 +203,7 @@ def get_post(post_id):
     return jsonify(response)
 
 
+# FUNCTION TO EDIT POSTS
 @app.route('/edit-post/<int:post_id>/', methods=["PUT"])
 @jwt_required()
 def edit_post(post_id):
@@ -227,5 +238,6 @@ def edit_post(post_id):
     return response
 
 
+# RUNS CODE
 if __name__ == "__main__":
     app.run()
