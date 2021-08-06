@@ -6,6 +6,7 @@ colorama==0.4.4
 cors==1.0.1
 filelock==3.0.12
 Flask==2.0.1
+Flask-JWT==0.3.2
 Flask-Mail==0.9.1
 future==0.18.2
 gevent==21.1.2
@@ -15,6 +16,7 @@ idna==3.2
 itsdangerous==2.0.1
 Jinja2==3.0.1
 MarkupSafe==2.0.1
+PyJWT==1.4.2
 PySocks==1.7.1
 requests==2.26.0
 requests-file==1.5.1
