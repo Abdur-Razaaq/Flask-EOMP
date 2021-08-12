@@ -224,17 +224,38 @@ def edit_post(post_id):
                     response["message"] = "Name Updated Successfully"
                     response["status_code"] = 200
 
-            if incoming_data.get("content") is not None:
-                put_data["content"] = incoming_data.get("content")
+            if incoming_data.get("description") is not None:
+                put_data["description"] = incoming_data.get("description")
 
                 with sqlite3.connect("flask_db.db") as conn:
                     cursor = conn.cursor()
-                    cursor.execute("UPDATE product SET name =? WHERE id=?", (put_data["content"], post_id))
+                    cursor.execute("UPDATE product SET description =? WHERE id=?", (put_data["description"], post_id))
                     conn.commit()
 
-                    response["message"] = "Content Updated Successfully"
+                    response["message"] = "Description Updated Successfully"
                     response["status_code"] = 200
 
+            if incoming_data.get("price") is not None:
+                put_data["price"] = incoming_data.get("price")
+
+                with sqlite3.connect("flask_db.db") as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE product SET price =? WHERE id=?", (put_data["price"], post_id))
+                    conn.commit()
+
+                    response["message"] = "Price Updated Successfully"
+                    response["status_code"] = 200
+
+            if incoming_data.get("category") is not None:
+                put_data["category"] = incoming_data.get("category")
+
+                with sqlite3.connect("flask_db.db") as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE product SET category =? WHERE id=?", (put_data["category"], post_id))
+                    conn.commit()
+
+                    response["message"] = "Category Updated Successfully"
+                    response["status_code"] = 200
     return response
 
 
