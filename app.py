@@ -1,4 +1,5 @@
 # IMPORTING ALL THE NEEDED MODULES
+import datetime
 import hmac
 import sqlite3
 from flask import Flask, request, jsonify
@@ -72,6 +73,8 @@ def identity(payload):
 # INITIALISING FLASK APP AND DEBUGGING
 app = Flask(__name__)
 app.debug = True
+# Setting Auth Token Timeout
+app.config['JWT_EXPIRATION_DELTA'] = datetime.timedelta(seconds=4000)
 # USING FLASK MAIL TO SEND EMAILS
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
