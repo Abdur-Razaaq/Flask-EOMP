@@ -108,12 +108,12 @@ def protected():
 def user_registration():
     response = {}
     if request.method == "POST":
-        first_name = request.form['first_name']
-        last_name = request.form['last_name']
-        username = request.form['username']
-        address = request.form['address']
-        password = request.form['password']
-        email_address = request.form['email_address']
+        first_name = request.JSON['first_name']
+        last_name = request.JSON['last_name']
+        username = request.JSON['username']
+        address = request.JSON['address']
+        password = request.JSON['password']
+        email_address = request.JSON['email_address']
 
         with sqlite3.connect("flask_db.db") as conn:
             cursor = conn.cursor()
